@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 WriteMakefile(
     'NAME'		=> 'POE::Component::RSS',
-    'VERSION_FROM'	=> 'RSS.pm', # finds $VERSION
+    'VERSION_FROM'	=> 'VERSION', # finds $VERSION
     'PREREQ_PM'		=> { 'POE' => 0.11,
                        'XML::RSS' => 0.9,
 		       'Test::More' => 0.08,
@@ -11,7 +11,6 @@ WriteMakefile(
     'dist'              => { 'COMPRESS' => 'gzip -9f',
                              'SUFFIX' => 'gz'
                            },
-    'AUTHOR'            => 'Michael Stevens <michael@etla.org>',
-    'PM'                => {'RSS.pm' => '${INST_LIBDIR}/RSS.pm'},
+    'AUTHOR'            => 'sungo (eek+cpan@eekeek.org)',
     'ABSTRACT'          => 'A module for event based RSS parsing',
 );

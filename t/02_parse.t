@@ -2,7 +2,6 @@
 
 use strict;
 use Test::More tests => 4;
-sub POE::Kernel::ASSERT_DEFAULT () { 1 }
 use POE qw(Component::RSS);
 
 sub DEBUG () { 0 }

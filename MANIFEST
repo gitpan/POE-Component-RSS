@@ -1,7 +1,8 @@
 Changes
 MANIFEST
 Makefile.PL
-RSS.pm
+lib/POE/Component/RSS.pm
 t/01_require.t
 t/02_parse.t
 README
+VERSION
