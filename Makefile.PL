@@ -5,7 +5,8 @@ WriteMakefile(
     'NAME'		=> 'POE::Component::RSS',
     'VERSION_FROM'	=> 'RSS.pm', # finds $VERSION
     'PREREQ_PM'		=> { 'POE' => 0.11,
-                       'XML::RSS' => 0.9
+                       'XML::RSS' => 0.9,
+		       'Test::More' => 0.08,
                      }, 
     'dist'              => { 'COMPRESS' => 'gzip -9f',
                              'SUFFIX' => 'gz'

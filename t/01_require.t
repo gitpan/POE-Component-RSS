@@ -1,18 +1,9 @@
 #!/usr/bin/perl -w
 
 use strict;
+use Test::More tests => 2;
 
-$| = 1;
-
-print "1..1\n";
-
-eval "
-  use POE;
-  use POE::Component::RSS;
-";
-
-if ($@) {
-  print "not ok 1\n";
-} else {
-  print "ok 1\n";
+BEGIN {
+	use_ok('POE');
+	use_ok('POE::Component::RSS');
 }

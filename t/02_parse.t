@@ -1,14 +1,11 @@
 #!/usr/bin/perl -w
 
 use strict;
+use Test::More tests => 4;
 sub POE::Kernel::ASSERT_DEFAULT () { 1 }
 use POE qw(Component::RSS);
 
 sub DEBUG () { 0 }
-
-$| = 1;
-
-print "1..4\n";
 
 my $item_count = 0;
 my $tag_count = 0;
@@ -147,29 +144,10 @@ $poe_kernel->run();
 
 DEBUG && print "Got $item_count items(s)\n";
 
-if ($item_count == 20) {
-  print "ok 1\n";
-} else {
-  print "not ok 1\n";
-}
-
-if ($tag_count == 10) {
-  print "ok 2\n";
-} else {
-  print "not ok 2\n";
-}
-
-if ($start_count == 2) {
-  print "ok 3\n";
-} else {
-  print "not ok 3\n";
-}
-
-if ($stop_count == 2) {
-  print "ok 4\n";
-} else {
-  print "not ok 4\n";
-}
+is($item_count, 20, "item count");
+is($tag_count, 10, "tag count correct");
+is($start_count, 2, "start count correct");
+is($stop_count, 2, "stop count correct");
 
 exit;
 
