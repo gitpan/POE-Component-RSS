@@ -1,0 +1,7 @@
+Changes
+MANIFEST
+Makefile.PL
+RSS.pm
+t/01_require.t
+t/02_parse.t
+README
