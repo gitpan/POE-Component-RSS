@@ -1,126 +1,127 @@
+# $Id: RSS.pm 551 2005-08-23 03:45:06Z sungo $
 package POE::Component::RSS;
 
+use warnings;
 use strict;
 
-use XML::RSS;
 use POE;
 use Carp qw(croak);
-use vars qw(@ISA %EXPORT_TAGS @EXPORT_OK @EXPORT $VERSION);
 
-require Exporter;
+use XML::RSS;
+use Params::Validate qw(validate_with SCALAR);
 
-@ISA = qw(Exporter);
+use vars qw($VERSION);
+$VERSION = '1.'.sprintf "%04d", (qw($Rev: 551 $))[1];
 
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
-# This allows declaration	use POE::Component::RSS ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-%EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
-
-@EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-@EXPORT = qw(
-	
-);
-$VERSION = '0.06';
-
-
-# Preloaded methods go here.
-
-# Spawn a new PoCo::RSS session
 sub spawn {
-  my $type = shift;
-  croak "$type requires an even number of parameters" if @_ % 2;
+	my $class = shift;
 
-  my %params = @_;
+	my %params = validate_with(
+		params => \@_,
+		spec => {
+			Alias => { 
+				type => SCALAR,
+				default => 'rss',
+				optional => 1,
+			},
+		},
+	);
 
-  my $alias = delete $params{'Alias'};
+	my $alias = delete $params{'Alias'};
 
-  $alias = 'rss' unless defined($alias) and length($alias);
+	POE::Session->create(
+		inline_states => {
+			_start => \&rss_start,
+			_stop  => \&rss_stop,
+			parse  => \&got_parse,
+		},
+		args => [ $alias ],
+	);
 
-  croak("$type doesn't know these parameters: ",
-	join (', ', sort keys %params))
-    if scalar keys %params;
-
-  POE::Session->create(
-		       inline_states => {
-					 _start => \&rss_start,
-					 _stop => \&rss_stop,
-					 parse => \&got_parse,
-					},
-		       args => [$alias ],
-		      );
-  undef;
-
+	return;
 }
 
 sub got_parse {
+	my ($return_states, $rss_string, $rss_identity_tag) = @_[ARG0, ARG1, ARG2];
 
-  my ($kernel, $heap, $sender, $return_states, $rss_string, $rss_identity_tag) =
-    @_[KERNEL, HEAP, SENDER, ARG0, ARG1, ARG2];
+	my @rss_tag;
 
-  my @rss_tag;
+	if (defined($rss_identity_tag)) {
+		@rss_tag = ($rss_identity_tag);
+	} else {
+		@rss_tag = ();
+	}
 
-  if (defined($rss_identity_tag)) {
-      @rss_tag = ($rss_identity_tag);
-  } else {
-      @rss_tag = ();
-  }
-
-  my $rss_parser = new XML::RSS;
+	my $rss_parser = XML::RSS->new();
   
-  $rss_parser->parse($rss_string);
+	$rss_parser->parse($rss_string);
   
-  if (exists $return_states->{'Start'}) {
-      $kernel->post($sender, $return_states->{'Start'}, @rss_tag);
-  }
+	if (exists $return_states->{'Start'}) {
+		$_[KERNEL]->post(
+			$_[SENDER],
+			$return_states->{'Start'},
+			@rss_tag
+		);
+	}
 
-  if (exists $return_states->{'Item'}) {
-      foreach my $item (@{$rss_parser->{'items'}}) {
-	  # $item->{'title'}
-	  # $item->{'link'}
-	  $kernel->post($sender, $return_states->{'Item'}, @rss_tag, $item);
-      }
-  }
+	if (exists $return_states->{'Item'}) {
+		foreach my $item (@{$rss_parser->{'items'}}) {
+			# $item->{'title'}
+			# $item->{'link'}
+			$_[KERNEL]->post(
+				$_[SENDER],
+				$return_states->{'Item'},
+				@rss_tag,
+				$item
+			);
+		}
+	}
 
-  if (exists $return_states->{'Channel'}) {
-      $kernel->post($sender, $return_states->{'Channel'}, @rss_tag, $rss_parser->{'channel'});
-  }
+	if (exists $return_states->{'Channel'}) {
+		$_[KERNEL]->post(
+			$_[SENDER], 
+			$return_states->{'Channel'},
+			@rss_tag,
+			$rss_parser->{'channel'}
+		);
+	}
 
-  if (exists $return_states->{'Image'}) {
-      $kernel->post($sender, $return_states->{'Image'}, @rss_tag, $rss_parser->{'image'});
-  }
+	if (exists $return_states->{'Image'}) {
+		$_[KERNEL]->post(
+			$_[SENDER],
+			$return_states->{'Image'},
+			@rss_tag,
+			$rss_parser->{'image'}
+		);
+	}
 
-  if (exists $return_states->{'Textinput'}) {
-      $kernel->post($sender, $return_states->{'Textinput'}, @rss_tag, $rss_parser->{'textinput'});
-  }
+	if (exists $return_states->{'Textinput'}) {
+		$_[KERNEL]->post(
+			$_[SENDER],
+			$return_states->{'Textinput'},
+			@rss_tag,
+			$rss_parser->{'textinput'}
+		);
+	}
   
-  if (exists $return_states->{'Stop'}) {
-      $kernel->post($sender, $return_states->{'Stop'}, @rss_tag);
-  }
+	if (exists $return_states->{'Stop'}) {
+		$_[KERNEL]->post(
+			$_[SENDER],
+			$return_states->{'Stop'},
+			@rss_tag
+		);
+	}
 
-  return;
+	return;
 
 }
 
 sub rss_start {
-  my ($kernel, $heap, $alias) = @_[KERNEL, HEAP, ARG0];
-  
-  $kernel->alias_set($alias);
-
+	$_[KERNEL]->alias_set($_[ARG0]);
 }
 
-sub rss_stop {
-  my ($kernel, $heap) = @_[KERNEL, HEAP];
+sub rss_stop { }
 
-}
-
-# Autoload methods go after =cut, and are processed by the autosplit program.
 
 1;
 __END__
@@ -135,10 +136,13 @@ POE::Component::RSS - Event based RSS parsing
 
   POE::Component::RSS->spawn();
 
-  $kernel->post('rss', 'parse', {
-                         Item => 'item_state',
-                       },
-                     , $rss_string);
+  $kernel->post(
+    'rss', 
+    'parse' => {
+      Item => 'item_state',
+    },
+    $rss_string
+  );
 
 =head1 DESCRIPTION
 
@@ -152,7 +156,7 @@ takes one named parameter:
 
 =over 4
 
-=item C<Alias => $alias_name>
+=item C<< Alias => $alias_name >>
 
 'Alias' sets the name by which the session is known. If no alias
 is given, the component defaults to 'rss'. It's possible to spawn
@@ -167,50 +171,51 @@ Parse requests are posted to the component's 'parse' state, and
 include a hash of states to return results to, and a RSS string to
 parse, followed by an optional identity parameter. For example:
 
-  $kernel->post('rss', 'parse',
-                       { # hash of result states
-                         Item => 'item_state',
-                         Channel => 'channel_state',
-                         Image => 'image_state',
-                         Textinput => 'textinput_state',
-                         Start => 'start_state',
-                         Stop => 'stop_state',
-                       },
-                     , $rss_string, $rss_identity_tag);
+  $kernel->post(
+    'rss', 
+    'parse' => { # hash of result states
+      Item      => 'item_state',
+      Channel   => 'channel_state',
+      Image     => 'image_state',
+      Textinput => 'textinput_state',
+      Start     => 'start_state',
+      Stop      => 'stop_state',
+    },
+    $rss_string, $rss_identity_tag);
 
 Currently supported result events are:
 
 =over 4
 
-=item C<Item => 'item_state'>
+=item C<< Item => 'item_state' >>
 
 A state to call every time an item is found within the RSS
 file. Called with a reference to a hash which contains all attributes
 of that item.
 
-=item C<Channel => 'channel_state'>
+=item C<< Channel => 'channel_state' >>
 
 A state to call every time a channel definition is found within the
 RSS file. Called with a reference to a hash which contains all attributes
 of that channel.
 
-=item C<Image => 'image_state'>
+=item C<< Image => 'image_state' >>
 
 A state to call every time an image definition is found within the
 RSS file. Called with a reference to a hash which contains all attributes
 of that image.
 
-=item C<Textinput => 'textinput_state'>
+=item C<< Textinput => 'textinput_state' >>
 
 A state to call every time a textinput definition is found within the
 RSS file. Called with a reference to a hash which contains all attributes
 of that textinput.
 
-=item C<Start => 'start_state'>
+=item C<< Start => 'start_state' >>
 
 A state to call at the start of parsing.
 
-=item C<Stop => 'stop_state'>
+=item C<< Stop => 'stop_state' >>
 
 A state to call at the end of parsing.
 
@@ -219,25 +224,6 @@ A state to call at the end of parsing.
 If an identity parameter was supplied with the parse event, the first
 parameter of all result events is that identity string. This allows easy
 identification of which parse a result is for.
-
-=head1 TODO
-
-=over 4
-
-=item *
-
-Provide event based generation of RSS files.
-
-=item *
-
-Provide more of the information in an RSS file as events.
-
-=item *
-
-We depend on the internals of XML::RSS. This is bad and should be
-fixed.
-
-=back
 
 =head1 BUGS
 
@@ -250,12 +236,48 @@ code should check return data to verify content.
 
 =back
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Michael Stevens - michael@etla.org.
+=over 4
 
-=head1 SEE ALSO
+=item * Matt Cashner - sungo@pobox.com
 
-perl(1). This component is built upon XML::RSS(3).
+=item * Michael Stevens - michael@etla.org
+
+=back
+
+=head1 LICENSE
+
+Copyright (c) 2004, Matt Cashner. All rights reserved.
+
+Copyright (c) 2002, Michael Stevens. All rights reserved. 
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+=over 4
+
+=item * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.  
+
+=item * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+=item * Neither the name of the Matt Cashner nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+=back
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =cut
+
+# vim: ts=4 sw=4 noet

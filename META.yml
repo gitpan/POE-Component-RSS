@@ -1,0 +1,14 @@
+name: POE-Component-RSS
+version: 0.08
+author: Matt Cashner (sungo@pobox.com)
+license: bsd
+distribution_type: module
+requires:
+  POE: 0
+  XML::RSS: 0
+  Test::More: 0
+  Params::Validate: 0
+no_index:
+  directory:
+    - inc
+generated_by: Module::Install version 0.37

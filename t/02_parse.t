@@ -1,6 +1,7 @@
-#!/usr/bin/perl -w
 
+use warnings;
 use strict;
+
 use Test::More tests => 4;
 use POE qw(Component::RSS);
 
@@ -12,132 +13,135 @@ my $start_count =0;
 my $stop_count = 0;
 
 sub parser_start {
-  my ($kernel, $heap) = @_[KERNEL, HEAP];
-  DEBUG && print "Parser starting...\n";
+	my ($kernel, $heap) = @_[KERNEL, HEAP];
+	DEBUG && print "Parser starting...\n";
 
-  POE::Component::RSS->spawn();
+	POE::Component::RSS->spawn();
   
-  my $rss_string;
-  { local $/; $rss_string = <DATA>; }
+	my $rss_string;
+	{ local $/; $rss_string = <DATA>; }
   
-  $kernel->post('rss', 'parse', {
-				 Item => 'item',
-				 Image => 'image',
-				 Channel => 'channel',
-				 Textinput => 'textinput',
-				 Start  => 'start',
-				 Stop => 'stop',
-				},
+	$kernel->post(
+		'rss', 
+		'parse' => {
+			Item => 'item',
+			Image => 'image',
+			Channel => 'channel',
+			Textinput => 'textinput',
+			Start  => 'start',
+			Stop => 'stop',
+		},
 		$rss_string
-	       );
+	);
   
-  $kernel->post('rss', 'parse', {
-				 Item => 'item',
-				 Image => 'image',
-				 Channel => 'channel',
-				 Textinput => 'textinput',
-				 Start  => 'start',
-				 Stop => 'stop',
-				},
+	$kernel->post(
+		'rss',
+		'parse' => {
+			Item => 'item',
+			Image => 'image',
+			Channel => 'channel',
+			Textinput => 'textinput',
+			Start  => 'start',
+			Stop => 'stop',
+		},
 		$rss_string, 'my_rss_tag',
-	       );
-
-  
+	);
+	return;
 }
 
 sub parser_stop {
-  # do stuff
-  DEBUG && print "Parser stopping...\n";
+	DEBUG && print "Parser stopping...\n";
 }
 
 sub got_item {
-  my ($kernel, $heap, $tag, $item) = @_[KERNEL, HEAP, ARG0, ARG1];
+	my ($kernel, $heap, $tag, $item) = @_[KERNEL, HEAP, ARG0, ARG1];
   
-  if (!defined($item)) {
-    $item = $tag;
-  }
+	unless (defined($item)) {
+		$item = $tag;
+	}
   
-  DEBUG && print "Got item:\n";
+	DEBUG && print "Got item:\n";
   
-  DEBUG && print "  Title: " . $item->{'title'} . "\n";
-  DEBUG && print "  Link: " . $item->{'link'} . "\n";
-  DEBUG && print "\n";
+	DEBUG && print "  Title: " . $item->{'title'} . "\n";
+	DEBUG && print "  Link: " . $item->{'link'} . "\n";
+	DEBUG && print "\n";
 
-  $item_count++;
-  if (defined($tag) and $tag eq 'my_rss_tag') {
-    $tag_count++;
-  }
+	$item_count++;
+	if (defined($tag) and $tag eq 'my_rss_tag') {
+		$tag_count++;
+	}
 
-  return;
+	return;
 }
 
 sub got_channel {
-  my ($kernel, $heap, $tag, $channel) = @_[KERNEL, HEAP, ARG0, ARG1];
-  if (!defined($channel)) {
-    $channel = $tag;
-  }
-  if (DEBUG) {
-      print "Got channel\n";
-      foreach (keys %{$channel}) {
-	print "  Key: $_ Value: " . $channel->{$_} . "\n";
-      }
-      print "\n";
-  }
+	my ($kernel, $heap, $tag, $channel) = @_[KERNEL, HEAP, ARG0, ARG1];
+	unless (defined($channel)) {
+		$channel = $tag;
+	}
+	if (DEBUG) {
+		print "Got channel\n";
+		foreach (keys %{$channel}) {
+			print "  Key: $_ Value: " . $channel->{$_} . "\n";
+		}
+		print "\n";
+	}
+	return;
 }
 
 sub got_image {
-  my ($kernel, $heap, $tag, $image) = @_[KERNEL, HEAP, ARG0, ARG1];
-  if (!defined($image)) {
-    $image = $tag;
-  }
+	my ($kernel, $heap, $tag, $image) = @_[KERNEL, HEAP, ARG0, ARG1];
+	unless (defined($image)) {
+		$image = $tag;
+	}
 
-  if (DEBUG) {
-      print "Got image\n";
-      foreach (keys %{$image}) {
-	print "  Key: $_ Value: " . $image->{$_} . "\n";
-      }
-      print "\n";
-  }
-
+	if (DEBUG) {
+		print "Got image\n";
+		foreach (keys %{$image}) {
+			print "  Key: $_ Value: " . $image->{$_} . "\n";
+		}
+		print "\n";
+	}
+	return;
 }
 
 sub got_textinput {
-  my ($kernel, $heap, $tag, $textinput) = @_[KERNEL, HEAP, ARG0, ARG1];
-  if (!defined($textinput)) {
-    $textinput = $tag;
-  }
-  if (DEBUG) {
-      print "Got textinput\n";
-      foreach (keys %{$textinput}) {
-	print "  Key: $_ Value: " . $textinput->{$_} . "\n";
-      }
-      print "\n";
-  }
-
+	my ($kernel, $heap, $tag, $textinput) = @_[KERNEL, HEAP, ARG0, ARG1];
+	unless (defined($textinput)) {
+		$textinput = $tag;
+	}
+	if (DEBUG) {
+		print "Got textinput\n";
+		foreach (keys %{$textinput}) {
+			print "  Key: $_ Value: " . $textinput->{$_} . "\n";
+		}
+		print "\n";
+	}
+	return;
 }
 
 sub got_start {
-  DEBUG && print "Started parsing\n";
-  $start_count++;
+	DEBUG && print "Started parsing\n";
+	$start_count++;
 }
 
 sub got_stop {
-  DEBUG && print "Stopped parsing\n";
-  $stop_count++;
+	DEBUG && print "Stopped parsing\n";
+	$stop_count++;
 }
 
 POE::Session->create(
-		     inline_states => {
-				       _start => \&parser_start,
-				       _stop => \&parser_stop,
-				       item => \&got_item,
-				       channel => \&got_channel,
-				       image => \&got_image,
-				       textinput => \&got_textinput,
-				       start => \&got_start,
-				       stop => \&got_stop,
-				      },
-		    );
+	inline_states => {
+		_start => \&parser_start,
+		_stop => \&parser_stop,
+		item => \&got_item,
+		channel => \&got_channel,
+		image => \&got_image,
+		textinput => \&got_textinput,
+		start => \&got_start,
+		stop => \&got_stop,
+	},
+);
 
 $poe_kernel->run();
 

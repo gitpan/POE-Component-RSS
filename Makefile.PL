@@ -1,16 +1,17 @@
-use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
-WriteMakefile(
-    'NAME'		=> 'POE::Component::RSS',
-    'VERSION_FROM'	=> 'VERSION', # finds $VERSION
-    'PREREQ_PM'		=> { 'POE' => 0.11,
-                       'XML::RSS' => 0.9,
-		       'Test::More' => 0.08,
-                     }, 
-    'dist'              => { 'COMPRESS' => 'gzip -9f',
-                             'SUFFIX' => 'gz'
-                           },
-    'AUTHOR'            => 'sungo (eek+cpan@eekeek.org)',
-    'ABSTRACT'          => 'A module for event based RSS parsing',
-);
+# $Id: Makefile.PL 550 2005-08-23 03:35:31Z sungo $
+use inc::Module::Install;
+
+name         ('POE-Component-RSS');
+author       ('Matt Cashner (sungo@pobox.com)');
+version_from ('VERSION');
+license      ('bsd');
+
+requires ('POE');
+requires ('XML::RSS');
+requires ('Test::More');
+requires ('Params::Validate');
+
+sign(1);
+
+WriteAll();
+
