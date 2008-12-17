@@ -1,5 +1,32 @@
-# $Id: RSS.pm 551 2005-08-23 03:45:06Z sungo $
 package POE::Component::RSS;
+
+=head1 NAME
+
+POE::Component::RSS - Event based RSS parsing
+
+=head1 SYNOPSIS
+
+  use POE qw(Component::RSS);
+
+  POE::Component::RSS->spawn();
+
+  $kernel->post(
+    'rss', 
+    'parse' => {
+      Item => 'item_state',
+    },
+    $rss_string
+  );
+
+=head1 DESCRIPTION
+
+POE::Component::RSS is an event based RSS parsing module. It wraps
+XML::RSS and provides a POE based framework for accessing the information
+provided.
+
+=head1 INTERFACE
+
+=cut
 
 use warnings;
 use strict;
@@ -10,10 +37,27 @@ use Carp qw(croak);
 use XML::RSS;
 use Params::Validate qw(validate_with SCALAR);
 
-use vars qw($VERSION);
-$VERSION = '1.'.sprintf "%04d", (qw($Rev: 551 $))[1];
+our $VERSION = '3.01';
 
-sub spawn {
+=head2 spawn
+
+RSS parser components are not normal objects, but are instead 'spawned'
+as separate sessions. This is done with PoCo::RSS's 'spawn' method, which
+takes one named parameter:
+
+=over 4
+
+=item C<< Alias => $alias_name >>
+
+'Alias' sets the name by which the session is known. If no alias
+is given, the component defaults to 'rss'. It's possible to spawn
+several RSS components with different names.
+
+=back
+
+=cut
+
+sub spawn { #{{{
 	my $class = shift;
 
 	my %params = validate_with(
@@ -32,16 +76,27 @@ sub spawn {
 	POE::Session->create(
 		inline_states => {
 			_start => \&rss_start,
-			_stop  => \&rss_stop,
+			_stop  => sub {},
 			parse  => \&got_parse,
 		},
 		args => [ $alias ],
 	);
 
 	return;
-}
+} #}}}
 
-sub got_parse {
+
+=begin devel
+
+=head2 got_parse
+
+Accepts parse requests, runs the documents through XML::Parser and generates
+events. Unfortunately, this call is entirely blocking and, if given a sizeable
+document, could take a while to return.
+
+=cut
+
+sub got_parse { #{{{
 	my ($return_states, $rss_string, $rss_identity_tag) = @_[ARG0, ARG1, ARG2];
 
 	my @rss_tag;
@@ -114,60 +169,30 @@ sub got_parse {
 
 	return;
 
-}
+} #}}}
 
-sub rss_start {
+
+=head2 rss_start
+
+Just sets our alias
+
+=cut
+
+sub rss_start { #{{{
 	$_[KERNEL]->alias_set($_[ARG0]);
-}
-
-sub rss_stop { }
-
+} #}}}
 
 1;
 __END__
 
-=head1 NAME
+=end devel
 
-POE::Component::RSS - Event based RSS parsing
-
-=head1 SYNOPSIS
-
-  use POE qw(Component::RSS);
-
-  POE::Component::RSS->spawn();
-
-  $kernel->post(
-    'rss', 
-    'parse' => {
-      Item => 'item_state',
-    },
-    $rss_string
-  );
-
-=head1 DESCRIPTION
-
-POE::Component::RSS is an event based RSS parsing module. It wraps
-XML::RSS and provides a POE based framework for accessing the information
-provided.
-
-RSS parser components are not normal objects, but are instead 'spawned'
-as separate sessions. This is done with PoCo::RSS's 'spawn' method, which
-takes one named parameter:
-
-=over 4
-
-=item C<< Alias => $alias_name >>
-
-'Alias' sets the name by which the session is known. If no alias
-is given, the component defaults to 'rss'. It's possible to spawn
-several RSS components with different names.
-
-=back
+=head2 Postbacks
 
 Sessions communicate asynchronously with PoCo::RSS - they post requests
 to it, and it posts results back.
 
-Parse requests are posted to the component's 'parse' state, and
+Parse requests are posted to the component's C<parse> state, and
 include a hash of states to return results to, and a RSS string to
 parse, followed by an optional identity parameter. For example:
 
@@ -233,6 +258,11 @@ identification of which parse a result is for.
 
 Some events may be emitted even if no data was found. Calling
 code should check return data to verify content.
+
+=item *
+
+This really needs to be rewritten using C<POE::Filter::XML>.
+Of course, I've been saying that for a few years now... 
 
 =back
 

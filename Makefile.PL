@@ -1,4 +1,4 @@
-# $Id: Makefile.PL 550 2005-08-23 03:35:31Z sungo $
+# $Id: Makefile.PL 626 2005-12-11 19:53:32Z sungo $
 use inc::Module::Install;
 
 name         ('POE-Component-RSS');
@@ -11,7 +11,8 @@ requires ('XML::RSS');
 requires ('Test::More');
 requires ('Params::Validate');
 
-sign(1);
+build_requires  ('Test::Distribution');
+build_requires  ('Test::Pod::Coverage');
 
 WriteAll();
 
